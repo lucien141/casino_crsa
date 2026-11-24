@@ -99,12 +99,19 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .hist span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700}
 .hist .red{background:#c8102e}.hist .black{background:#1b1b1b;border:1px solid rgba(255,255,255,.3)}.hist .green{background:#0a8a4a}
 .rboard{max-width:440px;margin:0 auto;width:100%;display:grid;gap:8px}
-.inner{position:relative;display:grid;grid-template-columns:var(--rail) repeat(3,minmax(0,1fr));grid-auto-rows:var(--rh);--rail:28px;--rh:46px}
-.inner .cell{border-radius:0;min-height:0}
-.inner .cell .mychip{right:auto;left:50%;transform:translate(12px,-50%)}
-.rail{background:rgba(0,0,0,.3);border-right:1px solid rgba(255,255,255,.15)}
-.outs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-left:28px}
-.outs .cell{min-height:42px}
+.tapis{position:relative;display:grid;grid-template-columns:40px 46px repeat(3,minmax(0,1fr));grid-template-rows:repeat(14,44px);gap:2px;padding:2px;background:#fff;border-radius:4px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.tapis .cell{border-radius:0;min-height:0;border:0;background:#08a83a;font:700 22px/1 "Playfair Display",serif;color:#fff}
+.tapis .cell.num.red,.tapis .cell.num.black{background:#08a83a}.tapis .num.red{color:#e8101c}.tapis .num.black{color:#111}
+.tapis .z{font-size:26px;color:#fff}
+.tapis .v{writing-mode:vertical-rl;font:700 17px/1 "Playfair Display",serif;letter-spacing:.04em}
+.tapis .v.sm{font:700 12px/1 Outfit,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+.tapis .empty{background:#08a83a}
+.tapis .losange{display:block;width:26px;height:44px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.tapis .cell .mychip{right:auto;left:50%;transform:translate(10px,-50%)}
+.tapis .cell.v .mychip,.tapis .cell.col2 .mychip{left:50%;top:auto;bottom:4px;transform:translateX(-50%)}
+.tapis .cell.hit{outline:4px solid var(--gold);outline-offset:-4px}
+.tapis .cell:disabled{opacity:1}
+.tapis .cell.full{cursor:not-allowed}
 .hs{position:absolute;width:26px;height:26px;transform:translate(-50%,-50%);border:0;padding:0;background:transparent;z-index:2;cursor:pointer;display:grid;place-items:center;border-radius:50%}
 .hs::after{content:"";width:8px;height:8px;border-radius:50%;background:rgba(255,226,138,.55);box-shadow:0 0 0 2px rgba(0,0,0,.35)}
 .hs:disabled{cursor:default}.hs:disabled::after{opacity:.35}
@@ -116,6 +123,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .tabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--dim);font:600 15px Outfit,sans-serif;cursor:pointer}
 .tabs button[aria-pressed=true]{background:var(--ink);color:#0a3a24}
 .table[data-v=tapis] .wheelbox,.table[data-v=roue] .rboard{display:none}
+.limits{font-size:13px;color:var(--dim);text-align:center}
 .table[data-v=roue] .wheelbox{width:min(84vw,380px)}
 .annonces{background:rgba(0,0,0,.22);border-radius:14px;padding:10px;display:grid;gap:8px}
 .annonces h3{margin:0;font-size:16px}.annonces h3 small{font-weight:400;color:var(--dim);font-size:13px}
@@ -213,7 +221,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   </div>
   <div id="waitbar" class="bar hide"><span class="wait" id="waitTxt">En attente des autres joueurs…</span><button class="b s" id="unready">Modifier mes jeux</button></div>
 </div>
-<div class="foot"><span>Mise max 500 par tour · Le 0 sort 2× plus souvent · 0 en plein 35:1 · Plein 35:1 · Cheval 17:1 · Transversale 11:1 · Carré 8:1 · Sixain 5:1 · Douzaine et colonne 2:1 · Chances simples 1:1</span><span>Tour <b id="round">1</b></span></div>
+<div class="foot"><span>Max 50 par mise sur les numéros, 500 sur les chances simples, douzaines et colonnes · Le 0 sort 2× plus souvent · 0 en plein 35:1 · Plein 35:1 · Cheval 17:1 · Transversale 11:1 · Carré 8:1 · Sixain 5:1 · Douzaine et colonne 2:1 · Chances simples 1:1</span><span>Tour <b id="round">1</b></span></div>
 </div>
 </div>
 <script>
@@ -472,7 +480,7 @@ Net.init=cfg=>{
 };
 
 {
-const MAXP=8,MAXTOUR=500,ZW=2,TOTW=36+ZW,RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const MAXP=8,LIM_IN=50,LIM_OUT=500,ZW=2,TOTW=36+ZW,RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const ORDER=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const OUT={c1:'2:1',c2:'2:1',c3:'2:1',d1:'1-12',d2:'13-24',d3:'25-36',low:'1-18',even:'Pair',red:'Rouge',black:'Noir',odd:'Impair',high:'19-36'};
 /* Mises entre les cases : cheval (2), transversale (3), carré (4), sixain (6) */
@@ -500,6 +508,7 @@ for(let f=0;f<10;f++)COMBOS['f'+f]={name:'Finale '+f,bets:Array.from({length:37}
 const comboBets=c=>COMBOS.hasOwnProperty(c)?COMBOS[c].bets:null;
 const units=c=>COMBOS[c].bets.reduce((t,[,m])=>t+m,0);
 const KEYS=new Set([...Array.from({length:37},(_,i)=>'n'+i),...Object.keys(OUT),...GROUPS.map(g=>g.k)]);
+const lim=k=>k[0]==='n'||k[0]==='g'?LIM_IN:LIM_OUT;
 const col=n=>n===0?'green':RED.has(n)?'red':'black';
 const colName=n=>n===0?'vert':RED.has(n)?'rouge':'noir';
 function pays(k,n){
@@ -538,10 +547,25 @@ function spinWheel(s){
 }
 
 /* ---------- Affichage ---------- */
-function cellHTML(k,label,cls,s,mp){
+function cellHTML(k,label,cls,s,mp,style=''){
   const mine=mp&&mp.bets[k]||0,others=s.players.reduce((t,p)=>t+(p.id!==s.me&&p.bets[k]||0),0);
-  const hit=s.phase==='end'&&pays(k,s.result)>0;
-  return `<button class="cell ${cls}${hit?' hit':''}" data-k="${k}" ${s.phase!=='bet'||!mp||mp.ready?'disabled':''}>${label}${others?`<span class="others">+${fmt(others)}</span>`:''}${mine?`<span class="mychip">${fmt(mine)}</span>`:''}</button>`;
+  const hit=s.phase==='end'&&pays(k,s.result)>0,full=mine+selChip>lim(k);
+  return `<button class="cell ${cls}${hit?' hit':''}${full?' full':''}" style="${style}" data-k="${k}" ${s.phase!=='bet'||!mp||mp.ready||full?'disabled':''} aria-label="${k[0]==='n'?'Plein '+k.slice(1):esc(OUT[k]||k)}">${label}${others?`<span class="others">+${fmt(others)}</span>`:''}${mine?`<span class="mychip">${fmt(mine)}</span>`:''}</button>`;
+}
+function tapisHTML(s,mp,dis){
+  let h='<div class="tapis"><div class="empty" style="grid-column:1/3;grid-row:1"></div>'+cellHTML('n0','0','z',s,mp,'grid-column:3/6;grid-row:1');
+  for(let r=0;r<12;r++)for(let c=1;c<=3;c++){const n=r*3+c;h+=cellHTML('n'+n,n,'num '+col(n),s,mp,`grid-column:${c+2};grid-row:${r+2}`)}
+  [['d1',2],['d2',6],['d3',10]].forEach(([k,r])=>h+=cellHTML(k,OUT[k],'v col2',s,mp,`grid-column:2;grid-row:${r}/${r+4}`));
+  [['low','1-18',2,''],['even','Pair',4,' sm'],['red','<span class="losange" style="background:#e8101c"></span>',6,''],['black','<span class="losange" style="background:#111"></span>',8,''],['odd','Impair',10,' sm'],['high','19-36',12,'']]
+    .forEach(([k,l,r,x])=>h+=cellHTML(k,l,(k==='red'||k==='black'?'':'v')+x,s,mp,`grid-column:1;grid-row:${r}/${r+2}`));
+  ['c1','c2','c3'].forEach((k,i)=>h+=cellHTML(k,'2:1','v sm',s,mp,`grid-column:${i+3};grid-row:14`));
+  h+='<div class="empty" style="grid-column:1/3;grid-row:14"></div>';
+  for(const g of GROUPS){
+    const mine=mp&&mp.bets[g.k]||0,others=s.players.some(p=>p.id!==s.me&&p.bets[g.k]),hit=s.phase==='end'&&g.nums.includes(s.result),full=mine+selChip>LIM_IN;
+    const x=g.x<0?'92px':`calc(92px + (100% - 94px) * ${g.x/3})`;
+    h+=`<button class="hs${mine?' has':''}${hit&&(mine||others)?' hit':''}" style="left:${x};top:${1+g.y*46}px" data-k="${g.k}" aria-label="${GNAME[g.nums.length]} ${g.nums.join('-')}" ${dis||full?'disabled':''}>${mine?`<span class="mychip">${fmt(mine)}</span>`:''}${others?'<span class="odot"></span>':''}</button>`;
+  }
+  return h+'</div>';
 }
 function render(s){
   const mp=s.players.find(p=>p.id===s.me);
@@ -554,20 +578,11 @@ function render(s){
   $('plist').innerHTML=s.players.map(p=>`<div class="pl${p.id===s.me?' me':''}${p.ready&&s.phase==='bet'?' rdy':''}">${avatarHTML(s.avs&&s.avs[p.id],'sm')}<div><b>${esc(p.name)}</b>${p.id===s.me?' <small style="display:inline;color:var(--gold)">(toi)</small>':''}
     <small>${fmt(p.bank)} jetons · mise ${fmt(p.total)}${s.phase==='bet'&&p.ready?' ✓':''}</small>${s.phase==='end'&&p.total?`<small class="${p.net>0?'win':p.net<0?'lose':''}">${p.net>0?'+':''}${fmt(p.net)}</small>`:''}</div></div>`).join('');
   const dis=s.phase!=='bet'||!mp||mp.ready?'disabled':'';
-  let h='<div class="inner"><div class="rail"></div>'+cellHTML('n0','0','green',s,mp);
-  for(let r=0;r<12;r++){h+='<div class="rail"></div>';for(let c=1;c<=3;c++){const n=r*3+c;h+=cellHTML('n'+n,n,col(n),s,mp)}}
-  for(const g of GROUPS){
-    const mine=mp&&mp.bets[g.k]||0,others=s.players.some(p=>p.id!==s.me&&p.bets[g.k]),hit=s.phase==='end'&&g.nums.includes(s.result);
-    const x=g.x<0?'calc(var(--rail)/2)':`calc(var(--rail) + (100% - var(--rail)) * ${g.x/3})`;
-    h+=`<button class="hs${mine?' has':''}${hit&&(mine||others)?' hit':''}" style="left:${x};top:calc(var(--rh) * ${g.y})" data-k="${g.k}" aria-label="${GNAME[g.nums.length]} ${g.nums.join('-')}" ${dis}>${mine?`<span class="mychip">${fmt(mine)}</span>`:''}${others?'<span class="odot"></span>':''}</button>`;
-  }
-  h+='</div><div class="outs">'+['c1','c2','c3'].map(k=>cellHTML(k,'2:1','out',s,mp)).join('')+'</div>';
-  h+='<div class="outs">'+['d1','d2','d3'].map(k=>cellHTML(k,OUT[k],'out',s,mp)).join('')+'</div>';
-  h+='<div class="outs">'+['low','even','odd','red','black','high'].map(k=>cellHTML(k,OUT[k],'out'+(k==='red'?' red':k==='black'?' black':''),s,mp)).join('')+'</div>';
-  const canC=c=>!dis&&mp&&mp.bank>=units(c)*selChip&&mp.total+units(c)*selChip<=MAXTOUR;
+  let h=tapisHTML(s,mp,dis);
+  const canC=c=>!dis&&mp&&mp.bank>=units(c)*selChip&&COMBOS[c].bets.every(([k,m])=>(mp.bets[k]||0)+m*selChip<=lim(k));
   h+='<div class="annonces"><h3>Annonces <small>(1 unité = jeton choisi : '+selChip+')</small></h3><div class="abtn">'+['serpent','voisins','tiers','orphelins','zero'].map(c=>`<button class="ann" data-c="${c}" ${canC(c)?'':'disabled'}><b>${COMBOS[c].name}</b><small>${units(c)} unités · ${fmt(units(c)*selChip)}</small></button>`).join('')+'</div>';
   h+='<div class="fin"><span>Finales</span>'+Array.from({length:10},(_,f)=>`<button class="ann f" data-c="f${f}" ${canC('f'+f)?'':'disabled'} aria-label="Finale ${f}, ${units('f'+f)} unités">${f}</button>`).join('')+'</div></div>';
-  h+='<p class="legend">Touche un point entre les cases pour miser à cheval (2 numéros), en carré (4) ou, sur la bande de gauche, en transversale (3) et en sixain (6).</p>';
+  h+='<p class="limits">Mise max : <b>50</b> par mise sur les numéros (plein, cheval, carré…) · <b>500</b> sur rouge/noir, pair/impair, 1-18/19-36, douzaines et colonnes</p><p class="legend">Touche un point entre deux numéros pour un cheval, au croisement de quatre pour un carré, et sur le bord gauche des numéros pour une transversale (milieu d\'une ligne) ou un sixain (entre deux lignes).</p>';
   $('rboard').innerHTML=h;
   renderStats(s);
   applyView(s);
@@ -577,7 +592,7 @@ function render(s){
   $('betbar').classList.toggle('hide',!bet);$('waitbar').classList.toggle('hide',bet);
   if(bet){
     if(mp.bank<selChip){const ok=CHIPS.filter(c=>c[0]<=mp.bank);if(ok.length)selChip=ok[ok.length-1][0]}
-    $('chips').innerHTML=CHIPS.map(([v,c])=>`<button class="chip${v===selChip?' sel':''}" style="--c:${c}" data-v="${v}" ${mp.bank<v||mp.total+v>MAXTOUR?'disabled':''} aria-pressed="${v===selChip}">${v}</button>`).join('');
+    $('chips').innerHTML=CHIPS.map(([v,c])=>`<button class="chip${v===selChip?' sel':''}" style="--c:${c}" data-v="${v}" ${mp.bank<v?'disabled':''} aria-pressed="${v===selChip}">${v}</button>`).join('');
     $('undo').disabled=!mp.total;$('clear').disabled=!mp.total;$('rebet').disabled=!mp.hasLast;
     $('ready').textContent=mp.total?'Prêt':'Passer';
     $('refill').classList.toggle('hide',mp.bank+mp.total>=5);
@@ -651,13 +666,13 @@ function act(pid,a,v){
   else if(p.ready)return;
   else if(a==='bet'){
     const k=v&&String(v.k),amt=v&&+v.a;
-    if(!KEYS.has(k)||!CHIPS.some(c=>c[0]===amt)||p.bank<amt||staked(p)+amt>MAXTOUR)return;
+    if(!KEYS.has(k)||!CHIPS.some(c=>c[0]===amt)||p.bank<amt||(p.bets[k]||0)+amt>lim(k))return;
     p.bank-=amt;p.bets[k]=(p.bets[k]||0)+amt;p.hist.push([[k,amt]]);
   }
   else if(a==='combo'){
     const list=comboBets(v&&String(v.c)),amt=v&&+v.a;
     if(!list||!CHIPS.some(c=>c[0]===amt))return;
-    const cost=list.reduce((t,[,m])=>t+m*amt,0);if(p.bank<cost||staked(p)+cost>MAXTOUR)return;
+    const cost=list.reduce((t,[,m])=>t+m*amt,0);if(p.bank<cost||list.some(([k,m])=>(p.bets[k]||0)+m*amt>lim(k)))return;
     const h=list.map(([k,m])=>[k,m*amt]);h.forEach(([k,x])=>p.bets[k]=(p.bets[k]||0)+x);p.bank-=cost;p.hist.push(h);
   }
   else if(a==='undo'){const h=p.hist.pop();if(!h)return;for(const [k,x] of h){p.bank+=x;p.bets[k]-=x;if(p.bets[k]<=0)delete p.bets[k]}}
@@ -665,7 +680,7 @@ function act(pid,a,v){
   else if(a==='rebet'){
     if(!p.last)return;
     const tot=Object.values(p.last).reduce((s,x)=>s+x,0);
-    if(p.bank+staked(p)<tot||tot>MAXTOUR)return;
+    if(p.bank+staked(p)<tot||Object.entries(p.last).some(([k,x])=>x>lim(k)))return;
     p.bank+=staked(p)-tot;p.bets={...p.last};p.hist=[Object.entries(p.last)];
   }
   else if(a==='ready')p.ready=true;
