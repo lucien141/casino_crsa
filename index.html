@@ -123,7 +123,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 <body>
 <div class="wrap">
 <div class="hero">
-  <div><h1>Casino entre amis</h1><p>Blackjack, poker et roulette en ligne, chacun sur son téléphone. Jetons virtuels uniquement, aucun argent réel.</p></div>
+  <div><h1>Casino entre amis</h1><p>Blackjack, poker, roulette et mini-golf en ligne, chacun sur son téléphone. Jetons virtuels uniquement, aucun argent réel.</p></div>
   <a class="shopcard" href="boutique.html"><span id="myav"></span><span><small>Ton porte-monnaie</small><b id="bank">1 000</b> jetons<em>Boutique et avatars →</em></span></a>
 </div>
 
@@ -161,6 +161,13 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <div class="meta">1 à 8 joueurs · un seul zéro</div>
     <button class="b p" data-g="roulette.html">Créer une table</button>
   </article>
+  <article class="game">
+    <div class="art" aria-hidden="true"><svg viewBox="0 0 200 130" style="width:100%;height:100%"><path d="M30 120 Q60 40 170 30 L185 110 Z" fill="#3fae4a"/><path d="M30 120 Q60 40 170 30" stroke="#7a4a1e" stroke-width="8" fill="none" stroke-linecap="round"/><ellipse cx="138" cy="70" rx="11" ry="5" fill="#0b1a10"/><path d="M140 70 V24" stroke="#eee" stroke-width="3"/><path d="M141 24 L168 32 L141 40Z" fill="#c8102e"/><circle cx="72" cy="100" r="8" fill="#fff" stroke="#ffd24a" stroke-width="3"/><path d="M72 100 L118 76" stroke="#ffe28a" stroke-width="3" stroke-dasharray="5 5"/></svg></div>
+    <h2>Mini-golf</h2>
+    <p>6 trous avec sable, rivière et bumpers. Vise au doigt comme un lance-pierre, le moins de coups remporte le pot.</p>
+    <div class="meta">1 à 6 joueurs · mise d'entrée au choix</div>
+    <button class="b p" data-g="minigolf.html">Créer une table</button>
+  </article>
 </section>
 
 <section class="panel">
@@ -173,7 +180,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <li>Les autres tapent le code ici. Le créateur garde la page ouverte pendant la partie.</li>
   </ol>
 </section>
-<div class="foot"><span>Tes jetons et ton avatar sont gardés sur ce téléphone et servent dans les 3 jeux.</span><a href="boutique.html" style="color:var(--gold)">Boutique : bonus, avatars et code de sauvegarde</a></div>
+<div class="foot"><span>Tes jetons et ton avatar sont gardés sur ce téléphone et servent dans tous les jeux.</span><a href="boutique.html" style="color:var(--gold)">Boutique : bonus, avatars et code de sauvegarde</a></div>
 </div>
 <script>
 /* ===== Outils communs du casino ===== */
@@ -290,7 +297,7 @@ function cardHTML(c){
 const CHIPS=[[5,'#8a8a8a'],[10,'#c8102e'],[25,'#1f5fbf'],[100,'#1b1b1b'],[500,'#6a2c91']];
 
 /* ===== Réseau : un téléphone héberge la table, les autres s'y connectent (PeerJS, gratuit) ===== */
-const PRE='casinofr26-',LET='ABCDEFGHJKLMNPQRSTUVWXYZ',GAMES={B:'blackjack.html',P:'poker.html',R:'roulette.html'};
+const PRE='casinofr26-',LET='ABCDEFGHJKLMNPQRSTUVWXYZ',GAMES={B:'blackjack.html',P:'poker.html',R:'roulette.html',G:'minigolf.html'};
 const Net={isHost:false,me:null,code:'',peer:null,hostConn:null,conns:new Map(),cfg:null,live:false,avs:{}};
 Net.view=id=>{const s=Net.cfg.view(id);s.me=id;s.avs=Net.avs;return s};
 Net.push=()=>{
