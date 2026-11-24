@@ -539,13 +539,13 @@ function finish(){
     if(!p.hands.length)continue;let net=0;
     for(const h of p.hands){
       const t=score(h.cards).t,bj=p.hands.length===1&&h.cards.length===2&&t===21;let pay=0,res;
-      if(t>21)res='Brûlé';else if(bj&&!dBJ){pay=h.bet*2.5;res='Blackjack !'}else if(bj&&dBJ){pay=h.bet;res='Égalité'}
+      if(t>21)res='Bust';else if(bj&&!dBJ){pay=h.bet*2.5;res='Blackjack !'}else if(bj&&dBJ){pay=h.bet;res='Égalité'}
       else if(dBJ)res='Perdu';else if(d>21||t>d){pay=h.bet*2;res='Gagné'}else if(t===d){pay=h.bet;res='Égalité'}else res='Perdu';
       h.res=res;h.cls=pay>h.bet?'win':pay===h.bet?'push':'lose';p.bank+=pay;net+=pay-h.bet;
     }
     p.net=net;
   }
-  G.phase='end';say(dBJ?'Blackjack du croupier':d>21?'Le croupier brûle !':`Le croupier fait ${d}`,d>21?'win':'');push();
+  G.phase='end';say(dBJ?'Blackjack du croupier':d>21?'Le croupier bust !':`Le croupier fait ${d}`,d>21?'win':'');push();
   setTimeout(newRound,6000);
 }
 function leave(pid){
