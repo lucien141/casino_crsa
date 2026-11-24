@@ -128,7 +128,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div>
     <svg class="felt-print" viewBox="0 0 420 90" aria-hidden="true">
       <defs><path id="arc" d="M20,20 Q210,95 400,20"/></defs>
-      <text fill="#f6efdc" font-family="Limelight,serif" font-size="17" letter-spacing="2" text-anchor="middle"><textPath href="#arc" startOffset="50%">BLACKJACK PAIE 6 POUR 5</textPath></text>
+      <text fill="#f6efdc" font-family="Limelight,serif" font-size="17" letter-spacing="2" text-anchor="middle"><textPath href="#arc" startOffset="50%">BLACKJACK PAIE 3 POUR 2</textPath></text>
       <text x="210" y="82" fill="#bcd3c3" font-family="Outfit,sans-serif" font-size="12" text-anchor="middle">Le croupier tire sur 17 souple · mise max 500</text>
     </svg>
     <div class="msg" id="msg" role="status"></div>
@@ -473,7 +473,7 @@ function finish(){
     if(!p.hands.length)continue;let net=0;
     for(const h of p.hands){
       const t=score(h.cards).t,bj=p.hands.length===1&&h.cards.length===2&&t===21;let pay=0,res;
-      if(t>21)res='Brûlé';else if(bj&&!dBJ){pay=h.bet*2.2;res='Blackjack !'}else if(bj&&dBJ){pay=h.bet;res='Égalité'}
+      if(t>21)res='Brûlé';else if(bj&&!dBJ){pay=h.bet*2.5;res='Blackjack !'}else if(bj&&dBJ){pay=h.bet;res='Égalité'}
       else if(dBJ)res='Perdu';else if(d>21||t>d){pay=h.bet*2;res='Gagné'}else if(t===d){pay=h.bet;res='Égalité'}else res='Perdu';
       h.res=res;h.cls=pay>h.bet?'win':pay===h.bet?'push':'lose';p.bank+=pay;net+=pay-h.bet;
     }
