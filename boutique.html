@@ -335,7 +335,7 @@ function cardHTML(c){
 const CHIPS=[[5,'#8a8a8a'],[10,'#c8102e'],[25,'#1f5fbf'],[100,'#1b1b1b'],[500,'#6a2c91']];
 
 /* ===== Réseau : un téléphone héberge la table, les autres s'y connectent (PeerJS, gratuit) ===== */
-const PRE='casinofr26-',LET='ABCDEFGHJKLMNPQRSTUVWXYZ',GAMES={B:'blackjack.html',P:'poker.html',R:'roulette.html',G:'minigolf.html'};
+const PRE='casinofr26-',LET='ABCDEFGHJKLMNPQRSTUVWXYZ',GAMES={B:'blackjack.html',P:'poker.html',R:'roulette.html',G:'minigolf.html',M:'menteur.html',J:'justeprix.html',C:'crash.html',L:'menteurcartes.html'};
 const Net={isHost:false,me:null,code:'',peer:null,hostConn:null,conns:new Map(),cfg:null,live:false,avs:{}};
 Net.view=id=>{const s=Net.cfg.view(id);s.me=id;s.avs=Net.avs;return s};
 Net.push=()=>{
