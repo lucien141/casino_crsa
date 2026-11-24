@@ -64,8 +64,9 @@ box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 5px 12px rgba(0,0,0,.35);font-fa
 .chip{width:52px;height:52px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);font:700 15px Outfit,sans-serif;color:#fff;cursor:pointer;box-shadow:0 0 0 3px var(--c),0 5px 10px rgba(0,0,0,.4);background:var(--c);flex:none}
 .chip:active{transform:translateY(2px)}.chip:disabled{opacity:.35;cursor:not-allowed}
 .chip.sel{box-shadow:0 0 0 3px var(--c),0 0 0 6px var(--gold),0 5px 10px rgba(0,0,0,.4)}
-button.b{min-height:48px;padding:0 16px;border-radius:12px;border:0;font:600 16px Outfit,sans-serif;cursor:pointer;background:var(--ink);color:#0a3a24;flex:1 1 120px;max-width:240px}
-button.b.p{background:var(--red);color:#fff}
+a.b{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+button.b,a.b{min-height:48px;padding:0 16px;border-radius:12px;border:0;font:600 16px Outfit,sans-serif;cursor:pointer;background:var(--ink);color:#0a3a24;flex:1 1 120px;max-width:240px}
+button.b.p,a.b.p{background:var(--red);color:#fff}
 button.b.s{background:rgba(0,0,0,.3);color:var(--ink);border:1px solid rgba(255,255,255,.25);flex:none;min-height:40px}
 button.b:disabled{opacity:.35;cursor:not-allowed}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -127,8 +128,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div>
     <svg class="felt-print" viewBox="0 0 420 90" aria-hidden="true">
       <defs><path id="arc" d="M20,20 Q210,95 400,20"/></defs>
-      <text fill="#f6efdc" font-family="Limelight,serif" font-size="17" letter-spacing="2" text-anchor="middle"><textPath href="#arc" startOffset="50%">BLACKJACK PAIE 3 POUR 2</textPath></text>
-      <text x="210" y="82" fill="#bcd3c3" font-family="Outfit,sans-serif" font-size="12" text-anchor="middle">Le croupier tire jusqu'à 16 et reste à 17</text>
+      <text fill="#f6efdc" font-family="Limelight,serif" font-size="17" letter-spacing="2" text-anchor="middle"><textPath href="#arc" startOffset="50%">BLACKJACK PAIE 6 POUR 5</textPath></text>
+      <text x="210" y="82" fill="#bcd3c3" font-family="Outfit,sans-serif" font-size="12" text-anchor="middle">Le croupier tire sur 17 souple · mise max 500</text>
     </svg>
     <div class="msg" id="msg" role="status"></div>
   </div>
@@ -140,7 +141,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <button class="b" id="clear">Effacer</button>
     <button class="b p" id="ready">Prêt</button>
     <button class="b" id="rebet">Mise précédente</button>
-    <button class="b hide" id="refill">Recharger 1000</button>
+    <a class="b hide" id="refill" href="boutique.html">Plus de jetons ? Boutique</a>
   </div>
 </div>
 <div id="waitbar" class="bar hide"><span class="wait">En attente des autres joueurs…</span><button class="b s" id="unready">Modifier ma mise</button></div>
@@ -163,12 +164,12 @@ const reduceMotion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-
 const wait=ms=>new Promise(r=>setTimeout(r,reduceMotion?60:ms));
 
 /* Porte-monnaie partagé entre tous les jeux */
-const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:''};
+const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:'',lastRefill:0};
 try{Object.assign(W,JSON.parse(localStorage.getItem('casino-wallet')||'{}'))}catch(e){}
 if(!(typeof W.bank==='number'&&W.bank>=0&&W.bank<1e9))W.bank=1000;
 if(!Array.isArray(W.owned))W.owned=['joueur'];
 if(!W.owned.includes('joueur'))W.owned.unshift('joueur');
-function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay}))}catch(e){}}
+function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay,lastRefill:W.lastRefill}))}catch(e){}}
 
 /* ===== Avatars (personnages originaux dessinés en SVG) ===== */
 const AVATARS=[
@@ -228,6 +229,29 @@ function drawAvatar(a){
 }
 AVATARS.forEach(a=>a.svg=drawAvatar(a));
 if(!AV[W.avatar]||!W.owned.includes(W.avatar))W.avatar='joueur';
+/* ===== Code de sauvegarde (pour retrouver ses jetons sur un autre appareil) ===== */
+function fnv(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h}
+const B32='0123456789ABCDEFGHJKMNPQRSTVWXYZ',SALT=0x5a3c9e17b2d4n,M45=(1n<<45n)-1n;
+const chk=v=>BigInt(fnv(v.toString(36)+'|casino-entre-amis')&0x7fff);
+function saveCode(){
+  let mask=0n;AVATARS.forEach((a,i)=>{if(W.owned.includes(a.id))mask|=1n<<BigInt(i)});
+  const bank=BigInt(Math.min(Math.floor(W.bank),2**27-1)),av=BigInt(Math.max(0,AVATARS.findIndex(a=>a.id===W.avatar)));
+  const pay=((bank<<18n)|(mask<<4n)|av)^SALT&M45,v=(pay<<15n)|chk(pay);
+  let t='';for(let i=11;i>=0;i--)t+=B32[Number((v>>BigInt(i*5))&31n)];
+  return t.match(/.{4}/g).join('-');
+}
+function readCode(code){
+  try{
+    const c=String(code).toUpperCase().replace(/[\s-]/g,'').replace(/O/g,'0').replace(/[IL]/g,'1').replace(/U/g,'V');
+    if(!/^[0-9A-Z]{12}$/.test(c))return null;
+    let v=0n;for(const ch of c){const k=B32.indexOf(ch);if(k<0)return null;v=(v<<5n)|BigInt(k)}
+    const pay=v>>15n;if(chk(pay)!==(v&0x7fffn))return null;
+    const raw=(pay^SALT)&M45,bank=Number(raw>>18n),mask=Number((raw>>4n)&0x3fffn),av=Number(raw&15n);
+    const owned=AVATARS.filter((a,i)=>mask&(1<<i)).map(a=>a.id);if(!owned.includes('joueur'))owned.unshift('joueur');
+    const avatar=(AVATARS[av]||AV.joueur).id;
+    return {bank,owned,avatar:owned.includes(avatar)?avatar:'joueur'};
+  }catch(e){return null}
+}
 const avatarHTML=(id,cls='')=>`<span class="av ${cls}">${(AV[id]||AV.joueur).svg}</span>`;
 
 /* Cartes */
@@ -321,7 +345,7 @@ Net.init=cfg=>{
 };
 
 {
-const MAXP=5;
+const MAXP=5,MAXBET=500;
 const cv=c=>c.r==='A'?11:'JQK'.includes(c.r)?10:+c.r;
 function score(cards){let t=0,a=0;for(const c of cards){t+=cv(c);if(c.r==='A')a++}while(t>21&&a){t-=10;a--}return{t,soft:a>0}}
 
@@ -351,7 +375,7 @@ function render(s){
     if(mp.ready)show('waitbar');
     else{
       show('betbar');
-      $('chips').innerHTML=CHIPS.map(([v,c])=>`<button class="chip" style="--c:${c}" data-v="${v}" ${mp.bank<v?'disabled':''}>${v}</button>`).join('');
+      $('chips').innerHTML=CHIPS.map(([v,c])=>`<button class="chip" style="--c:${c}" data-v="${v}" ${mp.bank<v||mp.bet+v>MAXBET?'disabled':''}>${v}</button>`).join('');
       $('clear').disabled=!mp.bet;$('ready').textContent=mp.bet?'Prêt':'Passer';
       $('rebet').disabled=!mp.last||mp.bank+mp.bet<mp.last;$('rebet').textContent=mp.last?`Mise précédente ${fmt(mp.last)}`:'Mise précédente';
       $('refill').classList.toggle('hide',mp.bank+mp.bet>=5);
@@ -360,7 +384,7 @@ function render(s){
     show('playbar');
     const h=mp.hands[s.hi],ok=!s.busy&&h;
     $('hit').disabled=$('stand').disabled=!ok;
-    $('double').disabled=!(ok&&h.cards.length===2&&mp.bank>=h.bet);
+    $('double').disabled=!(ok&&h.cards.length===2&&mp.bank>=h.bet&&score(h.cards).t>=9&&score(h.cards).t<=11);
     $('split').disabled=!(ok&&h.cards.length===2&&cv(h.cards[0])===cv(h.cards[1])&&mp.bank>=h.bet&&mp.hands.length<4&&!(h.split&&h.cards[0].r==='A'));
   }else{
     show('infobar');
@@ -386,10 +410,9 @@ function act(pid,a,v){
   if(G.phase==='bet'){
     if(a==='unready'){p.ready=false}
     else if(p.ready)return;
-    else if(a==='chip'){v=+v;if(!CHIPS.some(c=>c[0]===v)||p.bank<v)return;p.bank-=v;p.bet+=v}
+    else if(a==='chip'){v=+v;if(!CHIPS.some(c=>c[0]===v)||p.bank<v||p.bet+v>MAXBET)return;p.bank-=v;p.bet+=v}
     else if(a==='clear'){p.bank+=p.bet;p.bet=0}
     else if(a==='rebet'){p.bank+=p.bet;p.bet=0;if(p.last&&p.bank>=p.last){p.bank-=p.last;p.bet=p.last;p.ready=true}}
-    else if(a==='refill'){if(p.bank+p.bet<5)p.bank+=1000}
     else if(a==='ready')p.ready=true;
     else return;
     push();checkAllReady();return;
@@ -428,7 +451,7 @@ function next(){
 }
 async function hit(){const h=cur();h.cards.push(draw(shoe));push();if(score(h.cards).t>=21){G.busy=true;push();await wait(500);G.busy=false;next()}}
 function stand(){next()}
-async function dbl(){const p=G.players[G.pi],h=cur();if(h.cards.length!==2||p.bank<h.bet)return;p.bank-=h.bet;h.bet*=2;h.cards.push(draw(shoe));G.busy=true;push();await wait(550);G.busy=false;next()}
+async function dbl(){const p=G.players[G.pi],h=cur();if(h.cards.length!==2||p.bank<h.bet||score(h.cards).t<9||score(h.cards).t>11)return;p.bank-=h.bet;h.bet*=2;h.cards.push(draw(shoe));G.busy=true;push();await wait(550);G.busy=false;next()}
 async function split(){
   const p=G.players[G.pi],h=cur();
   if(!(h.cards.length===2&&cv(h.cards[0])===cv(h.cards[1])&&p.bank>=h.bet&&p.hands.length<4&&!(h.split&&h.cards[0].r==='A')))return;
@@ -440,7 +463,7 @@ async function split(){
 }
 async function dealerTurn(){
   G.busy=true;G.phase='dealer';G.pi=-1;G.hide=false;say('Au croupier…');push();await wait(600);
-  if(G.players.some(p=>!p.left&&p.hands.some(h=>score(h.cards).t<=21))){while(score(G.dealer).t<17){G.dealer.push(draw(shoe));push();await wait(600)}}
+  if(G.players.some(p=>!p.left&&p.hands.some(h=>score(h.cards).t<=21))){while(score(G.dealer).t<17||(score(G.dealer).t===17&&score(G.dealer).soft)){G.dealer.push(draw(shoe));push();await wait(600)}}
   G.busy=false;finish();
 }
 function finish(){
@@ -450,7 +473,7 @@ function finish(){
     if(!p.hands.length)continue;let net=0;
     for(const h of p.hands){
       const t=score(h.cards).t,bj=p.hands.length===1&&h.cards.length===2&&t===21;let pay=0,res;
-      if(t>21)res='Brûlé';else if(bj&&!dBJ){pay=h.bet*2.5;res='Blackjack !'}else if(bj&&dBJ){pay=h.bet;res='Égalité'}
+      if(t>21)res='Brûlé';else if(bj&&!dBJ){pay=h.bet*2.2;res='Blackjack !'}else if(bj&&dBJ){pay=h.bet;res='Égalité'}
       else if(dBJ)res='Perdu';else if(d>21||t>d){pay=h.bet*2;res='Gagné'}else if(t===d){pay=h.bet;res='Égalité'}else res='Perdu';
       h.res=res;h.cls=pay>h.bet?'win':pay===h.bet?'push':'lose';p.bank+=pay;net+=pay-h.bet;
     }
@@ -468,7 +491,7 @@ function leave(pid){
 }
 
 $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b)Net.send('chip',b.dataset.v)});
-for(const a of ['clear','ready','rebet','refill','unready','hit','stand','double','split'])$(a).onclick=()=>Net.send(a);
+for(const a of ['clear','ready','rebet','unready','hit','stand','double','split'])$(a).onclick=()=>Net.send(a);
 
 Net.init({letter:'B',view,render,onAct:act,onLeave:leave,
   onCreate(name,bank){shoe=newDeck(6);G={round:1,phase:'bet',pi:-1,hi:0,dealer:[],hide:true,busy:false,msg:'',mcls:'',players:[newPlayer('host',name,bank)]};say(`Table créée ! Donne le code ${Net.code} à tes amis`)},

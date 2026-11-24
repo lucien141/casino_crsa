@@ -63,8 +63,9 @@ box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 5px 12px rgba(0,0,0,.35);font-fa
 .chip{width:52px;height:52px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);font:700 15px Outfit,sans-serif;color:#fff;cursor:pointer;box-shadow:0 0 0 3px var(--c),0 5px 10px rgba(0,0,0,.4);background:var(--c);flex:none}
 .chip:active{transform:translateY(2px)}.chip:disabled{opacity:.35;cursor:not-allowed}
 .chip.sel{box-shadow:0 0 0 3px var(--c),0 0 0 6px var(--gold),0 5px 10px rgba(0,0,0,.4)}
-button.b{min-height:48px;padding:0 16px;border-radius:12px;border:0;font:600 16px Outfit,sans-serif;cursor:pointer;background:var(--ink);color:#0a3a24;flex:1 1 120px;max-width:240px}
-button.b.p{background:var(--red);color:#fff}
+a.b{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+button.b,a.b{min-height:48px;padding:0 16px;border-radius:12px;border:0;font:600 16px Outfit,sans-serif;cursor:pointer;background:var(--ink);color:#0a3a24;flex:1 1 120px;max-width:240px}
+button.b.p,a.b.p{background:var(--red);color:#fff}
 button.b.s{background:rgba(0,0,0,.3);color:var(--ink);border:1px solid rgba(255,255,255,.25);flex:none;min-height:40px}
 button.b:disabled{opacity:.35;cursor:not-allowed}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -111,6 +112,7 @@ h2.sec{font:400 28px/1.1 Limelight,serif;margin:26px 0 12px}
 .price{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:700;font-size:15px}
 .item button.b{min-height:44px;width:100%;max-width:none;font-size:15px;padding:0 8px}
 .item button.b.ok{background:var(--gold);color:#3a2a00}
+.savecode{text-align:center;font:700 clamp(20px,6.5vw,26px)/1.4 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;background:rgba(0,0,0,.35);border:1px dashed var(--gold);border-radius:12px;padding:12px;overflow-wrap:anywhere;color:var(--gold);-webkit-user-select:all;user-select:all}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b1b1b;border:1px solid var(--gold);color:var(--ink);padding:10px 18px;border-radius:12px;font-weight:600;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
 </style>
@@ -125,12 +127,26 @@ h2.sec{font:400 28px/1.1 Limelight,serif;margin:26px 0 12px}
 <div class="me"><span id="bigav"></span><div><h2 id="avname"></h2><p>C'est ce personnage que tes amis voient à la table.</p></div></div>
 
 <section class="free">
-  <div class="panel"><h3>Bonus du jour</h3><p id="bonusTxt">500 jetons offerts, une fois par jour.</p><button class="b p" id="bonus">Récupérer 500 jetons</button></div>
-  <div class="panel"><h3>Recharge de secours</h3><p id="sosTxt">1 000 jetons quand il te reste moins de 100 jetons.</p><button class="b" id="sos">Recharger 1 000 jetons</button></div>
+  <div class="panel"><h3>Bonus du jour</h3><p id="bonusTxt">300 jetons offerts, une fois par jour.</p><button class="b p" id="bonus">Récupérer 300 jetons</button></div>
+  <div class="panel"><h3>Recharge de secours</h3><p id="sosTxt"></p><button class="b" id="sos">Recharger 300 jetons</button></div>
+</section>
+
+<h2 class="sec">Sauvegarde</h2>
+<section class="free">
+  <div class="panel"><h3>Mon code de sauvegarde</h3><p>12 caractères qui contiennent tes jetons et tes avatars <b>de maintenant</b>. Note-le ou fais une capture d'écran, et reprends-en un nouveau après avoir joué.</p>
+    <div class="savecode" id="mycode"></div><button class="b p" id="copy">Copier le code</button></div>
+  <div class="panel"><h3>Restaurer une sauvegarde</h3><p>Sur un nouveau téléphone, colle ton code pour retrouver tes jetons et tes avatars. Ça remplace ce qu'il y a sur ce téléphone.</p>
+    <input class="field" id="incode" placeholder="XXXX-XXXX-XXXX" maxlength="16" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Code de sauvegarde">
+    <button class="b" id="restore">Restaurer</button><p class="err" id="rerr" role="alert"></p></div>
 </section>
 
 <h2 class="sec">Avatars</h2>
 <section class="shop" id="shop"></section>
+
+<h2 class="sec">Recommencer</h2>
+<section class="panel"><h3 style="margin:0;font-size:18px">Repartir de zéro</h3>
+  <p class="note">Remet ton porte-monnaie à <b>1 000 jetons</b> et tes avatars à <b>Le Joueur</b>, comme au premier jour. Ton prénom est gardé. Pratique pour relancer une compétition à égalité entre amis : chacun appuie sur ce bouton sur son téléphone.</p>
+  <button class="b p" id="reset" style="max-width:none">Recommencer à 1 000 jetons</button></section>
 <div class="foot"><span>Jetons virtuels uniquement : ils se gagnent en jouant et ne s'achètent pas avec de l'argent réel. Tes jetons et tes avatars sont gardés sur ce téléphone.</span></div>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -143,12 +159,12 @@ const reduceMotion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-
 const wait=ms=>new Promise(r=>setTimeout(r,reduceMotion?60:ms));
 
 /* Porte-monnaie partagé entre tous les jeux */
-const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:''};
+const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:'',lastRefill:0};
 try{Object.assign(W,JSON.parse(localStorage.getItem('casino-wallet')||'{}'))}catch(e){}
 if(!(typeof W.bank==='number'&&W.bank>=0&&W.bank<1e9))W.bank=1000;
 if(!Array.isArray(W.owned))W.owned=['joueur'];
 if(!W.owned.includes('joueur'))W.owned.unshift('joueur');
-function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay}))}catch(e){}}
+function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay,lastRefill:W.lastRefill}))}catch(e){}}
 
 /* ===== Avatars (personnages originaux dessinés en SVG) ===== */
 const AVATARS=[
@@ -208,6 +224,29 @@ function drawAvatar(a){
 }
 AVATARS.forEach(a=>a.svg=drawAvatar(a));
 if(!AV[W.avatar]||!W.owned.includes(W.avatar))W.avatar='joueur';
+/* ===== Code de sauvegarde (pour retrouver ses jetons sur un autre appareil) ===== */
+function fnv(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h}
+const B32='0123456789ABCDEFGHJKMNPQRSTVWXYZ',SALT=0x5a3c9e17b2d4n,M45=(1n<<45n)-1n;
+const chk=v=>BigInt(fnv(v.toString(36)+'|casino-entre-amis')&0x7fff);
+function saveCode(){
+  let mask=0n;AVATARS.forEach((a,i)=>{if(W.owned.includes(a.id))mask|=1n<<BigInt(i)});
+  const bank=BigInt(Math.min(Math.floor(W.bank),2**27-1)),av=BigInt(Math.max(0,AVATARS.findIndex(a=>a.id===W.avatar)));
+  const pay=((bank<<18n)|(mask<<4n)|av)^SALT&M45,v=(pay<<15n)|chk(pay);
+  let t='';for(let i=11;i>=0;i--)t+=B32[Number((v>>BigInt(i*5))&31n)];
+  return t.match(/.{4}/g).join('-');
+}
+function readCode(code){
+  try{
+    const c=String(code).toUpperCase().replace(/[\s-]/g,'').replace(/O/g,'0').replace(/[IL]/g,'1').replace(/U/g,'V');
+    if(!/^[0-9A-Z]{12}$/.test(c))return null;
+    let v=0n;for(const ch of c){const k=B32.indexOf(ch);if(k<0)return null;v=(v<<5n)|BigInt(k)}
+    const pay=v>>15n;if(chk(pay)!==(v&0x7fffn))return null;
+    const raw=(pay^SALT)&M45,bank=Number(raw>>18n),mask=Number((raw>>4n)&0x3fffn),av=Number(raw&15n);
+    const owned=AVATARS.filter((a,i)=>mask&(1<<i)).map(a=>a.id);if(!owned.includes('joueur'))owned.unshift('joueur');
+    const avatar=(AVATARS[av]||AV.joueur).id;
+    return {bank,owned,avatar:owned.includes(avatar)?avatar:'joueur'};
+  }catch(e){return null}
+}
 const avatarHTML=(id,cls='')=>`<span class="av ${cls}">${(AV[id]||AV.joueur).svg}</span>`;
 
 /* Cartes */
@@ -306,11 +345,13 @@ const rar=p=>p===0?['Offert','r0']:p<1000?['Commun','r0']:p<5000?['Rare','r1']:p
 let pending=null,pendTimer=null;
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2200)}
 function render(){
-  $('bank').textContent=fmt(W.bank);
+  $('bank').textContent=fmt(W.bank);$('mycode').textContent=saveCode();
   $('bigav').innerHTML=avatarHTML(W.avatar);$('avname').textContent=AV[W.avatar].name;
   const got=W.bonusDay===today();
-  $('bonus').disabled=got;$('bonus').textContent=got?'Déjà récupéré, reviens demain':'Récupérer 500 jetons';
-  $('sos').disabled=W.bank>=100;$('sosTxt').textContent=W.bank>=100?`Disponible quand il te reste moins de 100 jetons.`:'Tu es presque à sec : recharge gratuite disponible.';
+  $('bonus').disabled=got;$('bonus').textContent=got?'Déjà récupéré, reviens demain':'Récupérer 300 jetons';
+  const waitMin=Math.ceil((W.lastRefill+30*60000-Date.now())/60000);
+  $('sos').disabled=W.bank>=50||waitMin>0;
+  $('sosTxt').textContent=W.bank>=50?'300 jetons, seulement quand il te reste moins de 50 jetons (une fois toutes les 30 minutes).':waitMin>0?`Prochaine recharge possible dans ${waitMin} min.`:'Tu es à sec : recharge gratuite disponible.';
   $('shop').innerHTML=AVATARS.map(a=>{
     const own=W.owned.includes(a.id),eq=W.avatar===a.id,[rn,rc]=rar(a.price);
     let btn;
@@ -330,8 +371,26 @@ $('shop').addEventListener('click',e=>{
   if(W.bank<a.price||W.owned.includes(id))return render();
   W.bank-=a.price;W.owned.push(id);W.avatar=id;saveW();toast(`${a.name} acheté et équipé !`);render();
 });
-$('bonus').onclick=()=>{if(W.bonusDay===today())return;W.bonusDay=today();W.bank+=500;saveW();toast('+500 jetons');render()};
-$('sos').onclick=()=>{if(W.bank>=100)return;W.bank+=1000;saveW();toast('+1 000 jetons');render()};
+let restorePending=null;
+$('copy').onclick=async()=>{const c=saveCode();try{await navigator.clipboard.writeText(c);toast('Code copié')}catch(e){const r=document.createRange();r.selectNodeContents($('mycode'));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);toast('Code sélectionné : appuie sur Copier')}};
+$('restore').onclick=()=>{
+  const d=readCode($('incode').value);
+  if(!d){$('rerr').textContent='Code invalide : vérifie les 12 caractères.';restorePending=null;$('restore').textContent='Restaurer';return}
+  $('rerr').textContent='';
+  if(restorePending!==$('incode').value){restorePending=$('incode').value;$('restore').textContent=`Confirmer : ${fmt(d.bank)} jetons et ${d.owned.length} avatar${d.owned.length>1?'s':''} ?`;return}
+  restorePending=null;$('restore').textContent='Restaurer';
+  Object.assign(W,d);saveW();$('incode').value='';toast('Sauvegarde restaurée !');render();
+};
+$('incode').addEventListener('input',()=>{restorePending=null;$('restore').textContent='Restaurer';$('rerr').textContent=''});
+let resetPending=false,resetTimer=null;
+$('reset').onclick=()=>{
+  if(!resetPending){resetPending=true;$('reset').textContent=`Confirmer : perdre ${fmt(W.bank)} jetons et ${W.owned.length-1} avatar${W.owned.length>2?'s':''} ?`;clearTimeout(resetTimer);resetTimer=setTimeout(()=>{resetPending=false;$('reset').textContent='Recommencer à 1 000 jetons'},4000);return}
+  resetPending=false;clearTimeout(resetTimer);$('reset').textContent='Recommencer à 1 000 jetons';
+  W.bank=1000;W.owned=['joueur'];W.avatar='joueur';W.lastRefill=0;saveW();toast('Nouveau départ : 1 000 jetons');render();scrollTo({top:0,behavior:'smooth'});
+};
+$('bonus').onclick=()=>{if(W.bonusDay===today())return;W.bonusDay=today();W.bank+=300;saveW();toast('+300 jetons');render()};
+$('sos').onclick=()=>{if(W.bank>=50||Date.now()<W.lastRefill+30*60000)return;W.lastRefill=Date.now();W.bank+=300;saveW();toast('+300 jetons');render()};
+setInterval(render,30000);
 window.addEventListener('pageshow',()=>{try{Object.assign(W,JSON.parse(localStorage.getItem('casino-wallet')||'{}'))}catch(e){}render()});
 render();
 }

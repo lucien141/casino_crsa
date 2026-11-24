@@ -64,8 +64,9 @@ box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 5px 12px rgba(0,0,0,.35);font-fa
 .chip{width:52px;height:52px;border-radius:50%;border:4px dashed rgba(255,255,255,.85);font:700 15px Outfit,sans-serif;color:#fff;cursor:pointer;box-shadow:0 0 0 3px var(--c),0 5px 10px rgba(0,0,0,.4);background:var(--c);flex:none}
 .chip:active{transform:translateY(2px)}.chip:disabled{opacity:.35;cursor:not-allowed}
 .chip.sel{box-shadow:0 0 0 3px var(--c),0 0 0 6px var(--gold),0 5px 10px rgba(0,0,0,.4)}
-button.b{min-height:48px;padding:0 16px;border-radius:12px;border:0;font:600 16px Outfit,sans-serif;cursor:pointer;background:var(--ink);color:#0a3a24;flex:1 1 120px;max-width:240px}
-button.b.p{background:var(--red);color:#fff}
+a.b{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+button.b,a.b{min-height:48px;padding:0 16px;border-radius:12px;border:0;font:600 16px Outfit,sans-serif;cursor:pointer;background:var(--ink);color:#0a3a24;flex:1 1 120px;max-width:240px}
+button.b.p,a.b.p{background:var(--red);color:#fff}
 button.b.s{background:rgba(0,0,0,.3);color:var(--ink);border:1px solid rgba(255,255,255,.25);flex:none;min-height:40px}
 button.b:disabled{opacity:.35;cursor:not-allowed}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
@@ -150,7 +151,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 </div>
 <div id="waitbar" class="bar hide">
   <button class="b p" id="start">Lancer la main</button>
-  <button class="b hide" id="refill">Recharger 1000</button>
+  <a class="b hide" id="refill" href="boutique.html">Plus de jetons ? Boutique</a>
 </div>
 <div id="infobar" class="bar hide"><span class="wait" id="info"></span></div>
 <div class="foot"><span>Blindes <b>5 / 10</b> · Tes jetons suivent ton porte-monnaie</span><span>Main <b id="hand">0</b></span></div>
@@ -165,12 +166,12 @@ const reduceMotion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-
 const wait=ms=>new Promise(r=>setTimeout(r,reduceMotion?60:ms));
 
 /* Porte-monnaie partagé entre tous les jeux */
-const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:''};
+const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:'',lastRefill:0};
 try{Object.assign(W,JSON.parse(localStorage.getItem('casino-wallet')||'{}'))}catch(e){}
 if(!(typeof W.bank==='number'&&W.bank>=0&&W.bank<1e9))W.bank=1000;
 if(!Array.isArray(W.owned))W.owned=['joueur'];
 if(!W.owned.includes('joueur'))W.owned.unshift('joueur');
-function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay}))}catch(e){}}
+function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay,lastRefill:W.lastRefill}))}catch(e){}}
 
 /* ===== Avatars (personnages originaux dessinés en SVG) ===== */
 const AVATARS=[
@@ -230,6 +231,29 @@ function drawAvatar(a){
 }
 AVATARS.forEach(a=>a.svg=drawAvatar(a));
 if(!AV[W.avatar]||!W.owned.includes(W.avatar))W.avatar='joueur';
+/* ===== Code de sauvegarde (pour retrouver ses jetons sur un autre appareil) ===== */
+function fnv(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h}
+const B32='0123456789ABCDEFGHJKMNPQRSTVWXYZ',SALT=0x5a3c9e17b2d4n,M45=(1n<<45n)-1n;
+const chk=v=>BigInt(fnv(v.toString(36)+'|casino-entre-amis')&0x7fff);
+function saveCode(){
+  let mask=0n;AVATARS.forEach((a,i)=>{if(W.owned.includes(a.id))mask|=1n<<BigInt(i)});
+  const bank=BigInt(Math.min(Math.floor(W.bank),2**27-1)),av=BigInt(Math.max(0,AVATARS.findIndex(a=>a.id===W.avatar)));
+  const pay=((bank<<18n)|(mask<<4n)|av)^SALT&M45,v=(pay<<15n)|chk(pay);
+  let t='';for(let i=11;i>=0;i--)t+=B32[Number((v>>BigInt(i*5))&31n)];
+  return t.match(/.{4}/g).join('-');
+}
+function readCode(code){
+  try{
+    const c=String(code).toUpperCase().replace(/[\s-]/g,'').replace(/O/g,'0').replace(/[IL]/g,'1').replace(/U/g,'V');
+    if(!/^[0-9A-Z]{12}$/.test(c))return null;
+    let v=0n;for(const ch of c){const k=B32.indexOf(ch);if(k<0)return null;v=(v<<5n)|BigInt(k)}
+    const pay=v>>15n;if(chk(pay)!==(v&0x7fffn))return null;
+    const raw=(pay^SALT)&M45,bank=Number(raw>>18n),mask=Number((raw>>4n)&0x3fffn),av=Number(raw&15n);
+    const owned=AVATARS.filter((a,i)=>mask&(1<<i)).map(a=>a.id);if(!owned.includes('joueur'))owned.unshift('joueur');
+    const avatar=(AVATARS[av]||AV.joueur).id;
+    return {bank,owned,avatar:owned.includes(avatar)?avatar:'joueur'};
+  }catch(e){return null}
+}
 const avatarHTML=(id,cls='')=>`<span class="av ${cls}">${(AV[id]||AV.joueur).svg}</span>`;
 
 /* Cartes */
@@ -414,7 +438,6 @@ $('fold').onclick=()=>Net.send('fold');
 $('call').onclick=()=>Net.send($('call').dataset.a||'check');
 $('raise').onclick=()=>{const v=+$('amt').value;Net.send(v>=+$('amt').max?'allin':'raise',v)};
 $('start').onclick=()=>Net.send('start');
-$('refill').onclick=()=>Net.send('refill');
 
 /* ---------- Hôte : logique du jeu ---------- */
 let G=null,nextTimer=null;
@@ -459,7 +482,6 @@ function act(pid,a,v){
   if(!G)return;
   const i=G.players.findIndex(p=>p.id===pid),p=G.players[i];if(!p)return;
   if(a==='start'){if(G.phase==='wait')startHand();return}
-  if(a==='refill'){if(p.stack<BB&&!(G.phase==='play'&&p.inHand&&!p.folded)){p.stack+=1000;say(`${p.name} recharge 1000 jetons`);Net.push();if(G.phase==='wait')autoStart()}return}
   if(G.phase!=='play'||G.busy||i!==G.toAct)return;
   if(a==='fold'){p.folded=true;p.act='Couché'}
   else if(a==='check'){if(p.bet!==G.curBet)return;p.act='Parole'}
