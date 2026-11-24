@@ -221,7 +221,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   </div>
   <div id="waitbar" class="bar hide"><span class="wait" id="waitTxt">En attente des autres joueurs…</span><button class="b s" id="unready">Modifier mes jeux</button></div>
 </div>
-<div class="foot"><span>Max 50 par mise sur les numéros, 500 sur les chances simples, douzaines et colonnes · Le 0 sort 2× plus souvent · 0 en plein 35:1 · Plein 35:1 · Cheval 17:1 · Transversale 11:1 · Carré 8:1 · Sixain 5:1 · Douzaine et colonne 2:1 · Chances simples 1:1</span><span>Tour <b id="round">1</b></span></div>
+<div class="foot"><span>Pas de mise max · Le 0 sort 2× plus souvent · 0 en plein 35:1 · Plein 35:1 · Cheval 17:1 · Transversale 11:1 · Carré 8:1 · Sixain 5:1 · Douzaine et colonne 2:1 · Chances simples 1:1</span><span>Tour <b id="round">1</b></span></div>
 </div>
 </div>
 <script>
@@ -480,7 +480,7 @@ Net.init=cfg=>{
 };
 
 {
-const MAXP=8,LIM_IN=50,LIM_OUT=500,ZW=2,TOTW=36+ZW,RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const MAXP=8,LIM_IN=Infinity,LIM_OUT=Infinity,ZW=2,TOTW=36+ZW,RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const ORDER=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const OUT={c1:'2:1',c2:'2:1',c3:'2:1',d1:'1-12',d2:'13-24',d3:'25-36',low:'1-18',even:'Pair',red:'Rouge',black:'Noir',odd:'Impair',high:'19-36'};
 /* Mises entre les cases : cheval (2), transversale (3), carré (4), sixain (6) */
@@ -582,7 +582,7 @@ function render(s){
   const canC=c=>!dis&&mp&&mp.bank>=units(c)*selChip&&COMBOS[c].bets.every(([k,m])=>(mp.bets[k]||0)+m*selChip<=lim(k));
   h+='<div class="annonces"><h3>Annonces <small>(1 unité = jeton choisi : '+selChip+')</small></h3><div class="abtn">'+['serpent','voisins','tiers','orphelins','zero'].map(c=>`<button class="ann" data-c="${c}" ${canC(c)?'':'disabled'}><b>${COMBOS[c].name}</b><small>${units(c)} unités · ${fmt(units(c)*selChip)}</small></button>`).join('')+'</div>';
   h+='<div class="fin"><span>Finales</span>'+Array.from({length:10},(_,f)=>`<button class="ann f" data-c="f${f}" ${canC('f'+f)?'':'disabled'} aria-label="Finale ${f}, ${units('f'+f)} unités">${f}</button>`).join('')+'</div></div>';
-  h+='<p class="limits">Mise max : <b>50</b> par mise sur les numéros (plein, cheval, carré…) · <b>500</b> sur rouge/noir, pair/impair, 1-18/19-36, douzaines et colonnes</p><p class="legend">Touche un point entre deux numéros pour un cheval, au croisement de quatre pour un carré, et sur le bord gauche des numéros pour une transversale (milieu d\'une ligne) ou un sixain (entre deux lignes).</p>';
+  h+='<p class="legend">Touche un point entre deux numéros pour un cheval, au croisement de quatre pour un carré, et sur le bord gauche des numéros pour une transversale (milieu d\'une ligne) ou un sixain (entre deux lignes).</p>';
   $('rboard').innerHTML=h;
   renderStats(s);
   applyView(s);
