@@ -16,6 +16,7 @@
 <style>
 :root{color-scheme:dark;--felt:#0d5a37;--felt2:#063520;--ink:#f6efdc;--dim:#bcd3c3;--red:#c8102e;--gold:#ffe28a;--card:#fffdf7;--cw:clamp(58px,16vw,86px)}
 *{box-sizing:border-box;min-width:0}
+html{background:var(--felt2)}
 html,body{touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.5 Outfit,system-ui,sans-serif;overflow-x:clip;
 background:radial-gradient(ellipse 120% 80% at 50% 35%,#1a8452 0%,var(--felt) 45%,var(--felt2) 100%) fixed}
@@ -49,6 +50,11 @@ box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 5px 12px rgba(0,0,0,.35);font-fa
 .seat.me{background:rgba(0,0,0,.34)}
 .seat.on{border-color:var(--gold);background:rgba(255,226,138,.08)}
 .seat.out{opacity:.5}
+.av{display:inline-block;width:46px;height:46px;border-radius:50%;flex:none;vertical-align:middle;box-shadow:0 3px 8px rgba(0,0,0,.35)}.av svg{width:100%;height:100%;display:block}
+.av.sm{width:34px;height:34px}.av.lg{width:96px;height:96px}
+.seat>.av{display:block;margin:0 auto 4px}
+.seat.on>.av{box-shadow:0 0 0 3px var(--gold),0 3px 8px rgba(0,0,0,.35)}
+.merow{display:flex;align-items:center;gap:12px}.merow a{color:var(--gold);font-size:14px}
 .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nm small{font-weight:400;color:var(--gold)}
 .bk{font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -101,6 +107,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div class="bar hide" id="hdr"><span class="code">Code<b id="codeTxt"></b></span><button class="b s" id="quit">Quitter</button></div>
 </header>
 <section class="panel" id="lobby">
+  <div class="merow"><span id="myav"></span><a href="boutique.html">Changer d'avatar dans la boutique</a></div>
   <label class="lbl" for="pname">Ton prénom</label>
   <input id="pname" maxlength="12" placeholder="Prénom" autocomplete="off">
   <button class="b p" id="create">Créer une table</button>
@@ -156,10 +163,72 @@ const reduceMotion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-
 const wait=ms=>new Promise(r=>setTimeout(r,reduceMotion?60:ms));
 
 /* Porte-monnaie partagé entre tous les jeux */
-const W={name:'',bank:1000};
+const W={name:'',bank:1000,owned:['joueur'],avatar:'joueur',bonusDay:''};
 try{Object.assign(W,JSON.parse(localStorage.getItem('casino-wallet')||'{}'))}catch(e){}
 if(!(typeof W.bank==='number'&&W.bank>=0&&W.bank<1e9))W.bank=1000;
-function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank}))}catch(e){}}
+if(!Array.isArray(W.owned))W.owned=['joueur'];
+if(!W.owned.includes('joueur'))W.owned.unshift('joueur');
+function saveW(){try{localStorage.setItem('casino-wallet',JSON.stringify({name:W.name,bank:W.bank,owned:W.owned,avatar:W.avatar,bonusDay:W.bonusDay}))}catch(e){}}
+
+/* ===== Avatars (personnages originaux dessinés en SVG) ===== */
+const AVATARS=[
+  {id:'joueur',name:'Le Joueur',price:0,type:'human',bg:'#1f5fbf',skin:'#f1c9a5',hair:'#5a3a22'},
+  {id:'croupier',name:'Le Croupier',price:300,type:'human',bg:'#0a8a4a',skin:'#e8b98f',hair:'#1b1b1b',acc:['bowtie']},
+  {id:'cowboy',name:'Le Cowboy',price:600,type:'human',bg:'#c77a2c',skin:'#e0a982',acc:['cowboy']},
+  {id:'pirate',name:'La Pirate',price:800,type:'human',bg:'#2b4c7e',skin:'#f3cfb0',acc:['bandana','patch']},
+  {id:'chat',name:'Le Chat',price:1000,type:'cat',bg:'#6a2c91',skin:'#9aa0a6'},
+  {id:'renard',name:'Le Renard',price:1500,type:'fox',bg:'#0f6b5a',skin:'#e8792b'},
+  {id:'panda',name:'Le Panda',price:2000,type:'panda',bg:'#3a8f3a',skin:'#fafafa'},
+  {id:'robot',name:'Le Robot',price:3000,type:'robot',bg:'#26313d',skin:'#9aa7b4'},
+  {id:'magicien',name:'Le Magicien',price:4000,type:'human',bg:'#2a1f5c',skin:'#f1c9a5',acc:['wizard','beard']},
+  {id:'alien',name:"L'Extraterrestre",price:5000,type:'alien',bg:'#10223f',skin:'#7ad35b'},
+  {id:'fantome',name:'Le Fantôme',price:7500,type:'ghost',bg:'#3b2a55',skin:'#f4f4ff'},
+  {id:'roi',name:'Le Roi',price:10000,type:'human',bg:'#8a6a12',skin:'#f1c9a5',hair:'#a0522d',acc:['crown','beard']},
+  {id:'flambeur',name:'Le Flambeur',price:25000,type:'human',bg:'#7a0f22',skin:'#d9a07a',hair:'#1b1b1b',acc:['shades','chain']},
+  {id:'astronaute',name:"L'Astronaute",price:50000,type:'human',bg:'#0b1026',skin:'#f1c9a5',hair:'#5a3a22',acc:['helmet']}
+];
+const AV=Object.fromEntries(AVATARS.map(a=>[a.id,a]));
+function drawAvatar(a){
+  const E='#222',eyes=`<circle cx="26" cy="36" r="2.4" fill="${E}"/><circle cx="38" cy="36" r="2.4" fill="${E}"/>`,smile=`<path d="M26 43 Q32 48 38 43" stroke="${E}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  let s=`<circle cx="32" cy="32" r="32" fill="${a.bg}"/><circle cx="32" cy="32" r="30" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/>`;
+  const acc=a.acc||[];
+  if(a.type==='human'){
+    s+=`<rect x="25" y="50" width="14" height="10" fill="${a.skin}"/><path d="M12 64 Q14 52 32 52 Q50 52 52 64Z" fill="rgba(0,0,0,.35)"/>`;
+    s+=`<circle cx="32" cy="36" r="16" fill="${a.skin}"/>`;
+    if(a.hair)s+=`<path d="M16 34 Q16 18 32 18 Q48 18 48 34 Q44 26 32 25 Q22 25 16 34Z" fill="${a.hair}"/>`;
+    s+=acc.includes('shades')?`<rect x="20" y="32" width="10" height="7" rx="3" fill="#111"/><rect x="34" y="32" width="10" height="7" rx="3" fill="#111"/><path d="M30 35h4" stroke="#111" stroke-width="2"/>`:eyes;
+    s+=acc.includes('beard')?`<path d="M18 40 Q20 56 32 57 Q44 56 46 40 Q40 47 32 47 Q24 47 18 40Z" fill="#e9e9e9"/><path d="M27 45 Q32 48 37 45" stroke="${E}" stroke-width="2" fill="none"/>`:smile;
+  }else if(a.type==='cat'||a.type==='fox'){
+    s+=`<path d="M15 30 L18 10 L30 22Z M49 30 L46 10 L34 22Z" fill="${a.skin}"/><path d="M18 26 L19.5 15 L26 22Z M46 26 L44.5 15 L38 22Z" fill="#f4a6b8"/>`;
+    s+=`<circle cx="32" cy="37" r="17" fill="${a.skin}"/>`;
+    if(a.type==='fox')s+=`<path d="M17 40 Q24 54 32 54 Q40 54 47 40 Q40 44 32 44 Q24 44 17 40Z" fill="#fff"/>`;
+    s+=`<ellipse cx="25.5" cy="35" rx="2.6" ry="3.4" fill="${E}"/><ellipse cx="38.5" cy="35" rx="2.6" ry="3.4" fill="${E}"/><path d="M30 41h4l-2 2.5Z" fill="#e0607e"/><path d="M32 43.5 Q29 47 27 45 M32 43.5 Q35 47 37 45" stroke="${E}" stroke-width="1.6" fill="none"/>`;
+    if(a.type==='cat')s+=`<path d="M12 40h9 M12 44h9 M43 40h9 M43 44h9" stroke="#eee" stroke-width="1.2"/>`;
+  }else if(a.type==='panda'){
+    s+=`<circle cx="18" cy="22" r="7" fill="#1b1b1b"/><circle cx="46" cy="22" r="7" fill="#1b1b1b"/><circle cx="32" cy="37" r="17" fill="${a.skin}"/>`;
+    s+=`<ellipse cx="25" cy="35" rx="4.5" ry="5.5" fill="#1b1b1b" transform="rotate(-20 25 35)"/><ellipse cx="39" cy="35" rx="4.5" ry="5.5" fill="#1b1b1b" transform="rotate(20 39 35)"/><circle cx="25.5" cy="34.5" r="1.6" fill="#fff"/><circle cx="38.5" cy="34.5" r="1.6" fill="#fff"/><ellipse cx="32" cy="42" rx="3" ry="2" fill="#1b1b1b"/><path d="M28 46 Q32 49 36 46" stroke="${E}" stroke-width="1.8" fill="none"/>`;
+  }else if(a.type==='robot'){
+    s+=`<path d="M32 18V9" stroke="#cfd6dd" stroke-width="2"/><circle cx="32" cy="8" r="3.2" fill="#ff5a5a"/><rect x="13" y="18" width="38" height="34" rx="9" fill="${a.skin}"/><rect x="9" y="29" width="5" height="12" rx="2" fill="#6b7783"/><rect x="50" y="29" width="5" height="12" rx="2" fill="#6b7783"/>`;
+    s+=`<rect x="19" y="27" width="26" height="11" rx="5" fill="#13202c"/><circle cx="26" cy="32.5" r="3" fill="#5ff0ff"/><circle cx="38" cy="32.5" r="3" fill="#5ff0ff"/><path d="M23 45h18" stroke="#13202c" stroke-width="3" stroke-dasharray="3 2"/>`;
+  }else if(a.type==='alien'){
+    s+=`<path d="M24 19 L20 9 M40 19 L44 9" stroke="${a.skin}" stroke-width="2.5"/><circle cx="20" cy="8" r="3" fill="${a.skin}"/><circle cx="44" cy="8" r="3" fill="${a.skin}"/><ellipse cx="32" cy="36" rx="16" ry="19" fill="${a.skin}"/>`;
+    s+=`<ellipse cx="25" cy="34" rx="5" ry="7" fill="#111" transform="rotate(25 25 34)"/><ellipse cx="39" cy="34" rx="5" ry="7" fill="#111" transform="rotate(-25 39 34)"/><circle cx="24" cy="32" r="1.5" fill="#fff"/><circle cx="38" cy="32" r="1.5" fill="#fff"/><path d="M29 46 Q32 48 35 46" stroke="#111" stroke-width="1.8" fill="none"/>`;
+  }else if(a.type==='ghost'){
+    s+=`<path d="M16 56 V34 Q16 16 32 16 Q48 16 48 34 V56 L43 51 L38 56 L32 51 L26 56 L21 51Z" fill="${a.skin}"/><ellipse cx="26" cy="33" rx="3" ry="4.5" fill="#222"/><ellipse cx="38" cy="33" rx="3" ry="4.5" fill="#222"/><ellipse cx="32" cy="43" rx="3" ry="3.5" fill="#222"/>`;
+  }
+  if(acc.includes('bowtie'))s+=`<path d="M24 53 L32 56 L24 60Z M40 53 L32 56 L40 60Z" fill="#c8102e"/><circle cx="32" cy="56" r="2" fill="#8a0a1e"/>`;
+  if(acc.includes('chain'))s+=`<path d="M22 52 Q32 62 42 52" stroke="#ffd24a" stroke-width="2.4" fill="none" stroke-dasharray="2.5 1.5"/><circle cx="32" cy="58" r="3" fill="#ffd24a"/>`;
+  if(acc.includes('cowboy'))s+=`<ellipse cx="32" cy="24" rx="25" ry="5" fill="#7a4a1e"/><path d="M20 24 Q20 8 32 9 Q44 8 44 24Z" fill="#8f5a26"/><path d="M20 20 Q32 23 44 20" stroke="#3a2210" stroke-width="2.5" fill="none"/>`;
+  if(acc.includes('bandana'))s+=`<path d="M15 31 Q15 17 32 17 Q49 17 49 31 Q32 25 15 31Z" fill="#c8102e"/><circle cx="24" cy="22" r="1.3" fill="#fff"/><circle cx="36" cy="21" r="1.3" fill="#fff"/><path d="M48 28 L56 24 L55 33Z" fill="#c8102e"/>`;
+  if(acc.includes('patch'))s+=`<path d="M17 27 L47 41" stroke="#111" stroke-width="1.5"/><ellipse cx="38" cy="36" rx="5" ry="4.5" fill="#111"/>`;
+  if(acc.includes('wizard'))s+=`<path d="M15 27 L35 0 L49 27Z" fill="#4b2a9e"/><ellipse cx="32" cy="27" rx="20" ry="4" fill="#3a1f80"/><path d="M33 9l1 2.4 2.5.2-1.9 1.6.6 2.5-2.2-1.4-2.2 1.4.6-2.5-1.9-1.6 2.5-.2Z" fill="#ffe28a"/><circle cx="26" cy="20" r="1.4" fill="#ffe28a"/><circle cx="41" cy="22" r="1.1" fill="#ffe28a"/>`;
+  if(acc.includes('crown'))s+=`<path d="M17 25 L19 10 L25 18 L32 7 L39 18 L45 10 L47 25Z" fill="#ffd24a" stroke="#b88a00" stroke-width="1"/><circle cx="32" cy="18" r="2.2" fill="#c8102e"/><circle cx="23" cy="21" r="1.6" fill="#1f5fbf"/><circle cx="41" cy="21" r="1.6" fill="#1f5fbf"/>`;
+  if(acc.includes('helmet'))s+=`<circle cx="32" cy="36" r="21" fill="none" stroke="#f4f4f4" stroke-width="5"/><path d="M17 30 Q32 18 47 30 Q32 25 17 30Z" fill="#9fd3ff" opacity=".55"/><rect x="26" y="54" width="12" height="6" rx="2" fill="#f4f4f4"/><circle cx="12" cy="36" r="3" fill="#ff5a5a"/>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${s}</svg>`;
+}
+AVATARS.forEach(a=>a.svg=drawAvatar(a));
+if(!AV[W.avatar]||!W.owned.includes(W.avatar))W.avatar='joueur';
+const avatarHTML=(id,cls='')=>`<span class="av ${cls}">${(AV[id]||AV.joueur).svg}</span>`;
 
 /* Cartes */
 const SUITS=['♠','♥','♦','♣'],RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'],FR={J:'V',Q:'D',K:'R'};
@@ -178,8 +247,8 @@ const CHIPS=[[5,'#8a8a8a'],[10,'#c8102e'],[25,'#1f5fbf'],[100,'#1b1b1b'],[500,'#
 
 /* ===== Réseau : un téléphone héberge la table, les autres s'y connectent (PeerJS, gratuit) ===== */
 const PRE='casinofr26-',LET='ABCDEFGHJKLMNPQRSTUVWXYZ',GAMES={B:'blackjack.html',P:'poker.html',R:'roulette.html'};
-const Net={isHost:false,me:null,code:'',peer:null,hostConn:null,conns:new Map(),cfg:null,live:false};
-Net.view=id=>{const s=Net.cfg.view(id);s.me=id;return s};
+const Net={isHost:false,me:null,code:'',peer:null,hostConn:null,conns:new Map(),cfg:null,live:false,avs:{}};
+Net.view=id=>{const s=Net.cfg.view(id);s.me=id;s.avs=Net.avs;return s};
 Net.push=()=>{
   if(!Net.isHost)return;
   for(const [id,c] of Net.conns)if(c.open){try{c.send({t:'state',s:Net.view(id)})}catch(e){}}
@@ -199,7 +268,7 @@ Net.create=(tries=0)=>{
   lerr('Création de la table…',true);
   Net.code=Net.cfg.letter+Array.from({length:3},()=>LET[Math.floor(Math.random()*LET.length)]).join('');
   const peer=Net.peer=new Peer(PRE+Net.code);
-  peer.on('open',()=>{Net.isHost=true;Net.me='host';Net.cfg.onCreate(name,W.bank);Net.push()});
+  peer.on('open',()=>{Net.isHost=true;Net.me='host';Net.avs.host=W.avatar;Net.cfg.onCreate(name,W.bank);Net.push()});
   peer.on('connection',c=>{
     c.on('data',d=>{
       if(!d||typeof d!=='object')return;
@@ -207,7 +276,7 @@ Net.create=(tries=0)=>{
         const nm=String(d.name||'').trim().slice(0,12)||'Joueur',bk=Number(d.bank);
         const err=Net.cfg.onJoin(c.peer,nm,Number.isFinite(bk)&&bk>=0&&bk<1e9?bk:1000);
         if(err){c.send({t:'refuse',msg:err});setTimeout(()=>c.close(),400);return}
-        Net.conns.set(c.peer,c);Net.push();
+        Net.avs[c.peer]=AV[d.av]?d.av:'joueur';Net.conns.set(c.peer,c);Net.push();
       }else if(d.t==='act'&&Net.conns.has(c.peer))Net.cfg.onAct(c.peer,d.a,d.v);
     });
     c.on('close',()=>{if(Net.conns.delete(c.peer))Net.cfg.onLeave(c.peer)});
@@ -230,7 +299,7 @@ Net.join=raw=>{
   peer.on('open',id=>{
     Net.me=id;
     const c=Net.hostConn=peer.connect(PRE+code,{reliable:true});
-    c.on('open',()=>c.send({t:'join',name,bank:W.bank}));
+    c.on('open',()=>c.send({t:'join',name,bank:W.bank,av:W.avatar}));
     c.on('data',d=>{if(!d)return;if(d.t==='state'){clearTimeout(to);Net.show(d.s)}else if(d.t==='refuse'){clearTimeout(to);lerr(String(d.msg||'Table refusée'))}});
     c.on('close',()=>{if(Net.live){$('lostTxt').textContent='Le créateur a quitté la partie.';$('lost').classList.remove('hide')}});
   });
@@ -239,6 +308,7 @@ Net.join=raw=>{
 Net.init=cfg=>{
   Net.cfg=cfg;
   $('pname').value=W.name||'';
+  $('myav').innerHTML=avatarHTML(W.avatar,'lg');
   $('create').onclick=()=>Net.create();
   $('join').onclick=()=>Net.join($('jcode').value);
   $('jcode').addEventListener('keydown',e=>{if(e.key==='Enter')Net.join($('jcode').value)});
@@ -273,7 +343,7 @@ function render(s){
       return `<div class="hand${s.phase==='play'&&i===s.pi&&j===s.hi&&p.hands.length>1?' on':''}"><div class="cards">${h.cards.map(cardHTML).join('')}</div>
       <div class="tag"><span class="score">${val}</span> · ${fmt(h.bet)}${h.res?`<span class="r ${h.cls}">${esc(h.res)}</span>`:''}</div></div>`}).join('')+'</div>';
     const net=s.phase==='end'&&p.hands.length?`<div class="net ${p.net>0?'win':p.net<0?'lose':''}">${p.net>0?'+':''}${fmt(p.net)}</div>`:'';
-    return `<div class="seat${on?' on':''}${p.id===me?' me':''}${s.players.length===1?' solo':''}"><div class="nm">${esc(p.name)}${p.id===me?' <small>(toi)</small>':''}${p.left?' <small>parti</small>':''}</div>
+    return `<div class="seat${on?' on':''}${p.id===me?' me':''}${s.players.length===1?' solo':''}">${avatarHTML(s.avs&&s.avs[p.id])}<div class="nm">${esc(p.name)}${p.id===me?' <small>(toi)</small>':''}${p.left?' <small>parti</small>':''}</div>
       <div class="bk">${fmt(p.bank)} jetons</div>${body}${net}</div>`}).join('');
   const show=id=>['betbar','waitbar','playbar','infobar'].forEach(b=>$(b).classList.toggle('hide',b!==id));
   if(!mp){show('infobar');$('info').textContent='Connexion…';return}
