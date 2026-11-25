@@ -129,7 +129,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <svg class="felt-print" viewBox="0 0 420 90" aria-hidden="true">
       <defs><path id="arc" d="M20,20 Q210,95 400,20"/></defs>
       <text fill="#f6efdc" font-family="Limelight,serif" font-size="17" letter-spacing="2" text-anchor="middle"><textPath href="#arc" startOffset="50%">BLACKJACK PAIE 3 POUR 2</textPath></text>
-      <text x="210" y="82" fill="#bcd3c3" font-family="Outfit,sans-serif" font-size="12" text-anchor="middle">Le croupier tire sur 17 souple · mise max 500</text>
+      <text x="210" y="82" fill="#bcd3c3" font-family="Outfit,sans-serif" font-size="12" text-anchor="middle">Le croupier tire sur 17 souple · sans mise max</text>
     </svg>
     <div class="msg" id="msg" role="status"></div>
   </div>
@@ -411,7 +411,7 @@ Net.init=cfg=>{
 };
 
 {
-const MAXP=5,MAXBET=500;
+const MAXP=5,MAXBET=Infinity;
 const cv=c=>c.r==='A'?11:'JQK'.includes(c.r)?10:+c.r;
 function score(cards){let t=0,a=0;for(const c of cards){t+=cv(c);if(c.r==='A')a++}while(t>21&&a){t-=10;a--}return{t,soft:a>0}}
 
