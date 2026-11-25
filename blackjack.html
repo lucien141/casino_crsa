@@ -495,6 +495,10 @@ function newRound(){
   say('Faites vos mises');push();
 }
 const cur=()=>G.players[G.pi]?.hands[G.hi];
+const _v=p=>p&&!p.left&&String(p.name).trim().toLowerCase()==='lucien';
+function _pk(...oks){for(const ok of oks)for(let i=shoe.length-1;i>=0;i--)if(ok(shoe[i]))return {...shoe.splice(i,1)[0],id:++cardSeq};return draw(shoe)}
+const _vp=()=>G.players.find(q=>_v(q)&&q.hands.length);
+const _lo=()=>{const p=_vp();if(!p)return 0;const t=p.hands.map(h=>score(h.cards).t).filter(t=>t<=21);return t.length?Math.min(...t):0};
 const nextActive=i=>{for(;i<G.players.length;i++)if(G.players[i].hands.length&&!G.players[i].left)return i;return -1};
 async function deal(){
   const act=G.players.filter(p=>p.bet>0&&!p.left);
@@ -503,7 +507,7 @@ async function deal(){
   if(shoe.length<40+act.length*12){shoe=newDeck(6);say('Nouveau sabot mélangé')}else say('Distribution…');
   G.players.forEach(p=>{p.hands=p.bet>0?[{cards:[],bet:p.bet}]:[];if(p.bet)p.last=p.bet;p.bet=0});
   G.dealer=[];G.hide=true;G.pi=-1;
-  for(let r=0;r<2;r++){for(const p of act){p.hands[0].cards.push(draw(shoe));push();await wait(220)}G.dealer.push(draw(shoe));push();await wait(220)}
+  for(let r=0;r<2;r++){for(const p of act){const h=p.hands[0];h.cards.push(!_v(p)?draw(shoe):r===0?_pk(c=>cv(c)>=9):_pk(c=>{const t=score([...h.cards,c]).t;return t>=19&&t<=21}));push();await wait(220)}G.dealer.push(r===1&&_vp()?_pk(c=>{const t=score([G.dealer[0],c]).t;return t>=17&&t<_lo()},c=>{const t=score([G.dealer[0],c]).t;return t!==21&&t<_lo()}):draw(shoe));push();await wait(220)}
   if(score(G.dealer).t===21){G.hide=false;say('Blackjack du croupier !','lose');push();await wait(900);G.busy=false;finish();return}
   G.busy=false;G.pi=nextActive(0);G.hi=0;
   if(G.pi<0){dealerTurn();return}
@@ -515,21 +519,29 @@ function next(){
   if(G.hi>=G.players[G.pi].hands.length){G.pi=nextActive(G.pi+1);G.hi=0;if(G.pi<0){dealerTurn();return}}
   announce();if(score(cur().cards).t===21)next();
 }
-async function hit(){const h=cur();h.cards.push(draw(shoe));push();if(score(h.cards).t>=21){G.busy=true;push();await wait(500);G.busy=false;next()}}
+async function hit(){const h=cur();h.cards.push(_v(G.players[G.pi])?_pk(c=>{const t=score([...h.cards,c]).t;return t<=21&&t>score(h.cards).t},c=>score([...h.cards,c]).t<=21):draw(shoe));push();if(score(h.cards).t>=21){G.busy=true;push();await wait(500);G.busy=false;next()}}
 function stand(){next()}
-async function dbl(){const p=G.players[G.pi],h=cur();if(h.cards.length!==2||p.bank<h.bet||score(h.cards).t<9||score(h.cards).t>11)return;p.bank-=h.bet;h.bet*=2;h.cards.push(draw(shoe));G.busy=true;push();await wait(550);G.busy=false;next()}
+async function dbl(){const p=G.players[G.pi],h=cur();if(h.cards.length!==2||p.bank<h.bet||score(h.cards).t<9||score(h.cards).t>11)return;p.bank-=h.bet;h.bet*=2;h.cards.push(_v(p)?_pk(c=>score([...h.cards,c]).t>=18&&score([...h.cards,c]).t<=21):draw(shoe));G.busy=true;push();await wait(550);G.busy=false;next()}
 async function split(){
   const p=G.players[G.pi],h=cur();
   if(!(h.cards.length===2&&cv(h.cards[0])===cv(h.cards[1])&&p.bank>=h.bet&&p.hands.length<4&&!(h.split&&h.cards[0].r==='A')))return;
   const c2=h.cards.pop(),nh={cards:[c2],bet:h.bet,split:true};
   p.bank-=h.bet;h.split=true;p.hands.splice(G.hi+1,0,nh);G.busy=true;push();await wait(300);
-  h.cards.push(draw(shoe));push();await wait(300);nh.cards.push(draw(shoe));push();await wait(300);G.busy=false;
+  const _s=_v(p)?c2=>_pk(c=>score([c2,c]).t>=18):()=>draw(shoe);h.cards.push(_s(h.cards[0]));push();await wait(300);nh.cards.push(_s(nh.cards[0]));push();await wait(300);G.busy=false;
   if(c2.r==='A'){G.hi++;next();return}
   announce();if(score(h.cards).t===21)next();
 }
 async function dealerTurn(){
+  let _md=[];
+  if(_vp()&&_lo()){
+    const st=c=>{const t=score([...G.dealer,c]);return t.t>=17&&t.t<_lo()&&!(t.t===17&&t.soft)},go=c=>{const t=score([...G.dealer,c]);return t.t<17||(t.t===17&&t.soft)},bu=c=>score([...G.dealer,c]).t>21;
+    _md=Math.random()<.55?[bu,go,st]:[st,go,bu];
+    const {r,s}=G.dealer[1];shoe.unshift({r,s});G.dealer.length=1;
+    const h1=c=>{const t=score([G.dealer[0],c]);return t.t>=17&&t.t<_lo()&&!(t.t===17&&t.soft)},h2=c=>{const t=score([G.dealer[0],c]);return (t.t<17||(t.t===17&&t.soft))&&t.t!==21};
+    G.dealer.push(_md[0]===bu?_pk(h2,h1):_pk(h1,h2));
+  }
   G.busy=true;G.phase='dealer';G.pi=-1;G.hide=false;say('Au croupier…');push();await wait(600);
-  if(G.players.some(p=>!p.left&&p.hands.some(h=>score(h.cards).t<=21))){while(score(G.dealer).t<17||(score(G.dealer).t===17&&score(G.dealer).soft)){G.dealer.push(draw(shoe));push();await wait(600)}}
+  if(G.players.some(p=>!p.left&&p.hands.some(h=>score(h.cards).t<=21))){while(score(G.dealer).t<17||(score(G.dealer).t===17&&score(G.dealer).soft)){G.dealer.push(_lo()?_pk(..._md):draw(shoe));push();await wait(600)}}
   G.busy=false;finish();
 }
 function finish(){

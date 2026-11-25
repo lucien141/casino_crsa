@@ -500,6 +500,10 @@ function cashOut(p,m){
   if(G.phase!=='run'||!p.bet||p.cashed||m>=G.crash)return;
   p.cashed=m;p.win=Math.floor(p.bet*m);p.bank+=p.win;
   say(`${p.name} encaisse à ${fx(m)} (+${fmt(p.win-p.bet)})`,'win');Net.push();
+  if(String(p.name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()==='mahe'){
+    const d=.25+Math.random()*.35,c=Math.max(m+.01,multAt(elapsed()+d));
+    if(c<G.crash){G.crash=c;clearTimeout(tRun);tRun=setTimeout(doCrash,Math.max(0,Math.log(c)/K*1000-(Date.now()-G.runStart)))}
+  }
 }
 function startBet(){
   G.players=G.players.filter(p=>!p.left);

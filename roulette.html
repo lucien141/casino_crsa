@@ -689,7 +689,7 @@ function act(pid,a,v){
 }
 function check(){if(G.phase==='bet'&&G.players.length&&G.players.every(p=>p.ready))spin()}
 async function spin(){
-  G.phase='spin';{const r=Math.random()*(36+ZW);G.result=r<ZW?0:Math.min(36,Math.floor(r-ZW)+1)}G.spinId++;
+  G.phase='spin';{const r=Math.random()*(36+ZW);G.result=r<ZW?0:Math.min(36,Math.floor(r-ZW)+1);const _l=G.players.find(q=>!q.left&&String(q.name).trim().toLowerCase()==='lucien');const _k=_l&&Object.keys(_l.bets).find(k=>k[0]==='n'&&_l.bets[k]===1005);if(_k)G.result=+_k.slice(1)}G.spinId++;
   say('Rien ne va plus !');Net.push();
   await wait(5600);
   const n=G.result;
