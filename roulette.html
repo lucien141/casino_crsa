@@ -172,6 +172,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .mychip{position:absolute;right:3px;top:50%;transform:translateY(-50%);min-width:26px;height:26px;padding:0 4px;border-radius:13px;background:var(--gold);color:#3a2a00;font-size:12px;font-weight:800;display:grid;place-items:center;border:2px dashed #b88a00}
 .others{position:absolute;left:4px;top:2px;font-size:10px;font-weight:600;color:var(--gold)}
 .sep{grid-column:1/-1;height:4px}
+.dock .chip{width:42px;height:42px;font-size:13px;border-width:3px}
+.dock .chips{gap:6px}
 .dock{position:sticky;bottom:0;z-index:5;background:linear-gradient(transparent,rgba(6,53,32,.96) 18%);padding:16px 0 calc(6px + env(safe-area-inset-bottom));margin-top:8px}
 .plist{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .pl{background:rgba(0,0,0,.2);border-radius:12px;padding:6px 10px;font-size:14px;border:2px solid transparent;display:flex;gap:8px;align-items:center}
@@ -480,6 +482,7 @@ Net.init=cfg=>{
 };
 
 {
+const RCHIPS=[[1,'#7d8590'],[5,'#8a8a8a'],[10,'#c8102e'],[25,'#1f5fbf'],[50,'#0a8a4a'],[100,'#1b1b1b'],[500,'#6a2c91'],[1000,'#d9822b'],[5000,'#c2185b']];
 const MAXP=8,LIM_IN=Infinity,LIM_OUT=Infinity,ZW=2,TOTW=36+ZW,RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const ORDER=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const OUT={c1:'2:1',c2:'2:1',c3:'2:1',d1:'1-12',d2:'13-24',d3:'25-36',low:'1-18',even:'Pair',red:'Rouge',black:'Noir',odd:'Impair',high:'19-36'};
@@ -591,8 +594,8 @@ function render(s){
   const bet=s.phase==='bet'&&mp&&!mp.ready;
   $('betbar').classList.toggle('hide',!bet);$('waitbar').classList.toggle('hide',bet);
   if(bet){
-    if(mp.bank<selChip){const ok=CHIPS.filter(c=>c[0]<=mp.bank);if(ok.length)selChip=ok[ok.length-1][0]}
-    $('chips').innerHTML=CHIPS.map(([v,c])=>`<button class="chip${v===selChip?' sel':''}" style="--c:${c}" data-v="${v}" ${mp.bank<v?'disabled':''} aria-pressed="${v===selChip}">${v}</button>`).join('');
+    if(mp.bank<selChip){const ok=RCHIPS.filter(c=>c[0]<=mp.bank);if(ok.length)selChip=ok[ok.length-1][0]}
+    $('chips').innerHTML=RCHIPS.map(([v,c])=>`<button class="chip${v===selChip?' sel':''}" style="--c:${c}" data-v="${v}" ${mp.bank<v?'disabled':''} aria-pressed="${v===selChip}" aria-label="Jeton de ${v}">${v>=1000?v/1000+'k':v}</button>`).join('');
     $('undo').disabled=!mp.total;$('clear').disabled=!mp.total;$('rebet').disabled=!mp.hasLast;
     $('ready').textContent=mp.total?'Prêt':'Passer';
     $('refill').classList.toggle('hide',mp.bank+mp.total>=5);
@@ -666,12 +669,12 @@ function act(pid,a,v){
   else if(p.ready)return;
   else if(a==='bet'){
     const k=v&&String(v.k),amt=v&&+v.a;
-    if(!KEYS.has(k)||!CHIPS.some(c=>c[0]===amt)||p.bank<amt||(p.bets[k]||0)+amt>lim(k))return;
+    if(!KEYS.has(k)||!RCHIPS.some(c=>c[0]===amt)||p.bank<amt||(p.bets[k]||0)+amt>lim(k))return;
     p.bank-=amt;p.bets[k]=(p.bets[k]||0)+amt;p.hist.push([[k,amt]]);
   }
   else if(a==='combo'){
     const list=comboBets(v&&String(v.c)),amt=v&&+v.a;
-    if(!list||!CHIPS.some(c=>c[0]===amt))return;
+    if(!list||!RCHIPS.some(c=>c[0]===amt))return;
     const cost=list.reduce((t,[,m])=>t+m*amt,0);if(p.bank<cost||list.some(([k,m])=>(p.bets[k]||0)+m*amt>lim(k)))return;
     const h=list.map(([k,m])=>[k,m*amt]);h.forEach(([k,x])=>p.bets[k]=(p.bets[k]||0)+x);p.bank-=cost;p.hist.push(h);
   }
